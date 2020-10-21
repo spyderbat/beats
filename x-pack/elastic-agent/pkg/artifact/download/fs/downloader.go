@@ -11,16 +11,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/application/paths"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/agent/errors"
 	"github.com/elastic/beats/v7/x-pack/elastic-agent/pkg/artifact"
 )
 
 const (
 	packagePermissions = 0660
-)
-
-var (
-	defaultDropSubdir = filepath.Join("data", "downloads")
 )
 
 // Downloader is a downloader able to fetch artifacts from elastic.co web page.
@@ -39,7 +36,7 @@ func NewDownloader(config *artifact.Config) *Downloader {
 
 // Download fetches the package from configured source.
 // Returns absolute path to downloaded package and an error.
-func (e *Downloader) Download(_ context.Context, programName, version string) (_ string, err error) {
+func (e *Downloader) Download(_ context.Context, programName, artifactName, version string) (_ string, err error) {
 	downloadedFiles := make([]string, 0, 2)
 	defer func() {
 		if err != nil {
@@ -50,18 +47,18 @@ func (e *Downloader) Download(_ context.Context, programName, version string) (_
 	}()
 
 	// download from source to dest
-	path, err := e.download(e.config.OS(), programName, version)
+	path, err := e.download(e.config.OS(), programName, artifactName, version)
 	downloadedFiles = append(downloadedFiles, path)
 	if err != nil {
 		return "", err
 	}
 
-	hashPath, err := e.downloadHash(e.config.OS(), programName, version)
+	hashPath, err := e.downloadHash(e.config.OS(), programName, artifactName, version)
 	downloadedFiles = append(downloadedFiles, hashPath)
 	return path, err
 }
 
-func (e *Downloader) download(operatingSystem, programName, version string) (string, error) {
+func (e *Downloader) download(operatingSystem, programName, _, version string) (string, error) {
 	filename, err := artifact.GetArtifactName(programName, version, operatingSystem, e.config.Arch())
 	if err != nil {
 		return "", errors.New(err, "generating package name failed")
@@ -75,7 +72,7 @@ func (e *Downloader) download(operatingSystem, programName, version string) (str
 	return e.downloadFile(filename, fullPath)
 }
 
-func (e *Downloader) downloadHash(operatingSystem, programName, version string) (string, error) {
+func (e *Downloader) downloadHash(operatingSystem, programName, _, version string) (string, error) {
 	filename, err := artifact.GetArtifactName(programName, version, operatingSystem, e.config.Arch())
 	if err != nil {
 		return "", errors.New(err, "generating package name failed")
@@ -117,13 +114,13 @@ func (e *Downloader) downloadFile(filename, fullPath string) (string, error) {
 func getDropPath(cfg *artifact.Config) string {
 	// if drop path is not provided fallback to beats subfolder
 	if cfg == nil || cfg.DropPath == "" {
-		return defaultDropSubdir
+		return filepath.Join(paths.Home(), "downloads")
 	}
 
 	// if droppath does not exist fallback to beats subfolder
 	stat, err := os.Stat(cfg.DropPath)
 	if err != nil || !stat.IsDir() {
-		return defaultDropSubdir
+		return filepath.Join(paths.Home(), "downloads")
 	}
 
 	return cfg.DropPath

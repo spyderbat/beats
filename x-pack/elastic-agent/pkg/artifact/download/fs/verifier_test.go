@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	beatName      = "filebeat"
-	version       = "7.5.1"
-	sourcePattern = "/downloads/beats/filebeat/"
+	beatName     = "filebeat"
+	artifactName = "beats/filebeat"
+	version      = "7.5.1"
 )
 
 type testCase struct {
@@ -37,6 +37,7 @@ func TestFetchVerify(t *testing.T) {
 	targetPath := filepath.Join("testdata", "download")
 	ctx := context.Background()
 	programName := "beat"
+	artifactName := "beats/beat"
 	version := "8.0.0"
 
 	targetFilePath := filepath.Join(targetPath, "beat-8.0.0-darwin-x86_64.tar.gz")
@@ -58,13 +59,13 @@ func TestFetchVerify(t *testing.T) {
 	assert.NoError(t, err)
 
 	downloader := NewDownloader(config)
-	verifier, err := NewVerifier(config)
+	verifier, err := NewVerifier(config, true, nil)
 	assert.NoError(t, err)
 
 	// first download verify should fail:
 	// download skipped, as invalid package is prepared upfront
 	// verify fails and cleans download
-	matches, err := verifier.Verify(programName, version)
+	matches, err := verifier.Verify(programName, version, artifactName, true)
 	assert.NoError(t, err)
 	assert.Equal(t, false, matches)
 
@@ -77,7 +78,7 @@ func TestFetchVerify(t *testing.T) {
 	// second one should pass
 	// download not skipped: package missing
 	// verify passes because hash is not correct
-	_, err = downloader.Download(ctx, programName, version)
+	_, err = downloader.Download(ctx, programName, artifactName, version)
 	assert.NoError(t, err)
 
 	// file downloaded ok
@@ -87,7 +88,7 @@ func TestFetchVerify(t *testing.T) {
 	_, err = os.Stat(hashTargetFilePath)
 	assert.NoError(t, err)
 
-	matches, err = verifier.Verify(programName, version)
+	matches, err = verifier.Verify(programName, version, artifactName, true)
 	assert.NoError(t, err)
 	assert.Equal(t, true, matches)
 }
@@ -146,7 +147,7 @@ func TestVerify(t *testing.T) {
 	}
 
 	testClient := NewDownloader(config)
-	artifact, err := testClient.Download(context.Background(), beatName, version)
+	artifact, err := testClient.Download(context.Background(), beatName, artifactName, version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,12 +157,12 @@ func TestVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testVerifier, err := NewVerifier(config)
+	testVerifier, err := NewVerifier(config, true, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	isOk, err := testVerifier.Verify(beatName, version)
+	isOk, err := testVerifier.Verify(beatName, version, artifactName, true)
 	if err != nil {
 		t.Fatal(err)
 	}

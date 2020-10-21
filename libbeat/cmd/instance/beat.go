@@ -371,6 +371,11 @@ func (b *Beat) launch(settings Settings, bt beat.Creator) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := b.processing.Close(); err != nil {
+			logp.Warn("Failed to close global processing: %v", err)
+		}
+	}()
 
 	// Windows: Mark service as stopped.
 	// After this is run, a Beat service is considered by the OS to be stopped
@@ -888,12 +893,9 @@ func (b *Beat) clusterUUIDFetchingCallback() (elasticsearch.ConnectCallback, err
 }
 
 func (b *Beat) setupMonitoring(settings Settings) (report.Reporter, error) {
-	monitoringCfg, reporterSettings, err := monitoring.SelectConfig(b.Config.MonitoringBeatConfig)
-	if err != nil {
-		return nil, err
-	}
+	monitoringCfg := b.Config.MonitoringBeatConfig.Monitoring
 
-	monitoringClusterUUID, err := monitoring.GetClusterUUID(b.Config.MonitoringBeatConfig.Monitoring)
+	monitoringClusterUUID, err := monitoring.GetClusterUUID(monitoringCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -914,7 +916,6 @@ func (b *Beat) setupMonitoring(settings Settings) (report.Reporter, error) {
 
 		settings := report.Settings{
 			DefaultUsername: settings.Monitoring.DefaultUsername,
-			Format:          reporterSettings.Format,
 			ClusterUUID:     monitoringClusterUUID,
 		}
 		reporter, err := report.New(b.Info, settings, monitoringCfg, b.Config.Output)
