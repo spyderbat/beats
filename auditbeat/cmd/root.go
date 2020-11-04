@@ -47,6 +47,11 @@ var ShowCmd = &cobra.Command{
 	Short: "Show modules information",
 }
 
+var DeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete auditd rules",
+}
+
 // withECSVersion is a modifier that adds ecs.version to events.
 var withECSVersion = processing.WithFields(common.MapStr{
 	"ecs": common.MapStr{
@@ -69,4 +74,5 @@ func init() {
 	}
 	RootCmd = cmd.GenRootCmdWithSettings(create, settings)
 	RootCmd.AddCommand(ShowCmd)
+	RootCmd.AddCommand(DeleteCmd)
 }
