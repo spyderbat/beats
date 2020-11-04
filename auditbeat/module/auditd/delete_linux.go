@@ -25,14 +25,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/elastic/beats/v7/auditbeat/cmd"
+
 	"github.com/elastic/go-libaudit/v2"
 )
 
 func init() {
 	deleteRules := cobra.Command{
-		Use:     "auditd-rules-delete",
+		Use:     "auditd-rules",
 		Short:   "Delete currently installed auditd rules",
-		Aliases: []string{"audit-rules-delete", "audit_rules_delete", "rules_delete", "auditdrulesdelete", "auditrulesdelete"},
+		Aliases: []string{"audit-rules-delete", "audit_rules_delete", "rules_delete", "auditdrulesdelete", "auditrulesdelete", "rules"},
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := deleteAuditdRules(); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to delete auditd rules: %v\n", err)
